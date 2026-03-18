@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meeting Room Booking - Team Hub</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#10b981', // Emerald 500
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <!-- Main Container -->
+    <div class="max-w-md w-full my-8">
+
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center justify-center">
+                <i data-lucide="door-open" class="w-8 h-8 mr-2 text-primary"></i>
+                Room Reservations
+            </h1>
+            <p class="text-slate-500 mt-2">Pick a room, reserve a slot, and notify the team</p>
+        </div>
+
+        <!-- Main Card -->
+        <div class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-white">
+            <form id="booking-form" class="space-y-5">
+
+                <!-- Room Selection -->
+                <div>
+                    <label for="room-select" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Select
+                        Room</label>
+                    <div class="relative">
+                        <span
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i data-lucide="map-pin" class="w-5 h-5"></i>
+                        </span>
+                        <select id="room-select" name="room" required
+                            class="block w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all appearance-none cursor-pointer">
+                            <option value="" disabled selected>Choose a room...</option>
+                            <option value="Micron">Micron</option>
+                            <option value="Phimton">Phimton</option>
+                            <option value="Meeting Room">Meeting Room</option>
+                            <option value="Eclibs">Eclibs</option>
+
+                        </select>
+                        <div
+                            class="absolute inset-y-0 right-0 pr-3.5 flex items-center pointer-events-none text-slate-400">
+                            <i data-lucide="chevron-down" class="w-5 h-5"></i>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Your Name -->
+                <div>
+                    <label for="user-name" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Your Name</label>
+                    <div class="relative">
+                        <span
+                            class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </span>
+                        <input type="text" id="user-name" name="name" required placeholder="Who is booking?"
+                            class="block w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                    </div>
+                </div>
+
+                <!-- Date & Time -->
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label for="booking-date"
+                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Date</label>
+                        <input type="date" id="booking-date" name="date" required
+                            class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                    </div>
+                    <div>
+                        <label for="booking-time"
+                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Time</label>
+                        <input type="time" id="booking-time" name="time" required
+                            class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                    </div>
+                </div>
+
+                <!-- Warning (Duplicate) -->
+                <div id="duplicate-warning"
+                    class="hidden animate-pulse flex items-center p-3.5 text-sm text-rose-800 border-2 border-rose-100 rounded-2xl bg-rose-50"
+                    role="alert">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 mr-3 flex-shrink-0"></i>
+                    <div>This room is already reserved for this time slot.</div>
+                </div>
+
+                <!-- Button -->
+                <button type="submit"
+                    class="group relative w-full flex justify-center py-4 px-4 text-sm font-extrabold rounded-2xl text-white bg-primary hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]">
+                    <span
+                        class="absolute left-0 inset-y-0 flex items-center pl-4 group-hover:translate-x-1 transition-transform">
+                        <i data-lucide="send" class="w-5 h-5"></i>
+                    </span>
+                    Send Booking
+                </button>
+            </form>
+        </div>
+
+        <!-- History Card -->
+        <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="text-xl font-extrabold text-slate-800 flex items-center">
+                    <i data-lucide="history" class="w-5 h-5 mr-2 text-slate-400"></i>
+                    Recent Bookings
+                </h2>
+                <button id="clear-all"
+                    class="text-xs font-bold text-rose-500 hover:text-rose-700 transition-colors uppercase tracking-widest flex items-center">
+                    <i data-lucide="trash-2" class="w-3 h-3 mr-1"></i>
+                    Clear All
+                </button>
+            </div>
+
+            <!-- Filter -->
+            <div class="mb-4">
+                <div class="bg-slate-50 p-1 rounded-xl flex items-center">
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg text-xs font-bold flex-1 transition-all active-filter"
+                        data-room="All">All Rooms</button>
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg text-xs font-bold flex-1 transition-all text-slate-500 hover:bg-white"
+                        data-room="Micron">Micron</button>
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg text-xs font-bold flex-1 transition-all text-slate-500 hover:bg-white"
+                        data-room="Phimton">Phimton</button>
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg text-xs font-bold flex-1 transition-all text-slate-500 hover:bg-white"
+                        data-room="Meeting Room">Meeting Room</button>
+                    <button
+                        class="filter-btn px-4 py-2 rounded-lg text-xs font-bold flex-1 transition-all text-slate-500 hover:bg-white"
+                        data-room="Eclibs">Eclibs</button>
+                </div>
+            </div>
+
+            <!-- List -->
+            <div id="bookings-list" class="space-y-4 max-h-[300px] overflow-y-auto pr-2 scroll-smooth custom-scrollbar">
+                <!-- Bookings injected here -->
+            </div>
+        </div>
+
+        <footer class="mt-12 text-center text-slate-400 text-[10px] font-bold uppercase tracking-[2px]">
+            &copy; 2026 Internal Booking Tool
+        </footer>
+    </div>
+
+    <style>
+        .active-filter {
+            background-color: white;
+            color: #1e293b;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.05);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background-color: #e2e8f0;
+            border-radius: 10px;
+        }
+    </style>
+
+    <script>
+        const STORAGE_KEY = "team_room_reservations_v2";
+        const form = document.getElementById('booking-form');
+        const list = document.getElementById('bookings-list');
+        const warning = document.getElementById('duplicate-warning');
+        const clearBtn = document.getElementById('clear-all');
+        const filterBtns = document.querySelectorAll('.filter-btn');
+
+        let currentFilter = 'All';
+
+        // Room color map for UI
+        const ROOM_COLORS = {
+            'Micron': 'bg-blue-50 text-blue-600 border-blue-100',
+            'Phimton': 'bg-purple-50 text-purple-600 border-purple-100',
+            'Meeting Room': 'bg-amber-50 text-amber-600 border-amber-100',
+            'Eclibs': 'bg-amber-50 text-amber-600 border-amber-100'
+        };
+
+        // Initialize Icons
+        lucide.createIcons();
+
+        // --- Render function ---
+        function render() {
+            const bookings = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            const filtered = currentFilter === 'All'
+                ? bookings
+                : bookings.filter(b => b.room === currentFilter);
+
+            if (filtered.length === 0) {
+                list.innerHTML = `
+                    <div class="text-center py-10 opacity-30 select-none">
+                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                        <p class="text-sm font-bold uppercase tracking-widest text-slate-500">Empty Record</p>
+                    </div>
+                `;
+                lucide.createIcons();
+                return;
+            }
+
+            list.innerHTML = filtered.reverse().map(b => {
+                const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
+                return `
+                <div class="flex items-start justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
+                    <div class="flex gap-4">
+                        <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                            <i data-lucide="user" class="w-5 h-5"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
+                            <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(b.time)}</span>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${colors}">
+                        ${b.room}
+                    </span>
+                </div>
+                `;
+            }).join('');
+
+            lucide.createIcons();
+        }
+
+        // --- Submit Logic ---
+        form.addEventListener('submit', (e) => {
+            e.preventDefault();
+            warning.classList.add('hidden');
+
+            const fd = new FormData(form);
+            const booking = {
+                room: fd.get('room'),
+                name: fd.get('name').trim(),
+                date: fd.get('date'),
+                time: fd.get('time'),
+                id: Date.now()
+            };
+
+            // Double Booking Check (Same Room + Date + Time)
+            const all = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
+            const exists = all.some(x => x.room === booking.room && x.date === booking.date && x.time === booking.time);
+
+            if (exists) {
+                warning.classList.remove('hidden');
+                return;
+            }
+
+            // Save
+            all.push(booking);
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
+
+            // UI feedback
+            render();
+            form.reset();
+
+            // WhatsApp Message
+            const msg = `*Room Reserved*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.time)}\n*Reserved By:* ${booking.name}`;
+            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        });
+
+        // --- Filter Logic ---
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                filterBtns.forEach(b => b.classList.remove('active-filter', 'bg-white', 'text-slate-800'));
+                filterBtns.forEach(b => b.classList.add('text-slate-500', 'hover:bg-white'));
+
+                btn.classList.add('active-filter');
+                btn.classList.remove('text-slate-500', 'hover:bg-white');
+
+                currentFilter = btn.getAttribute('data-room');
+                render();
+            });
+        });
+
+        // --- Clear All Logic ---
+        clearBtn.addEventListener('click', () => {
+            if (confirm("Permanently clear all booking history?")) {
+                localStorage.removeItem(STORAGE_KEY);
+                render();
+            }
+        });
+
+        // --- Helper ---
+        function formatDate(d) {
+            const parts = d.split('-');
+            return `${parts[2]}/${parts[1]}/${parts[0]}`;
+        }
+        function formatTime(timeStr) {
+            let [hour, minute] = timeStr.split(':');
+            hour = parseInt(hour);
+
+            let period = hour >= 12 ? 'PM' : 'AM';
+            hour = hour % 12 || 12; // يحول 0 لـ 12
+
+            return `${hour}:${minute} ${period}`;
+        }
+
+        render();
+    </script>
+</body>
+
+</html>
