@@ -20,6 +20,8 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- SupaBase connection -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
 
 <body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
@@ -177,143 +179,7 @@
         }
     </style>
 
-    <script>
-        const STORAGE_KEY = "team_room_reservations_v2";
-        const form = document.getElementById('booking-form');
-        const list = document.getElementById('bookings-list');
-        const warning = document.getElementById('duplicate-warning');
-        const clearBtn = document.getElementById('clear-all');
-        const filterBtns = document.querySelectorAll('.filter-btn');
-
-        let currentFilter = 'All';
-
-        // Room color map for UI
-        const ROOM_COLORS = {
-            'Micron': 'bg-blue-50 text-blue-600 border-blue-100',
-            'Phimton': 'bg-purple-50 text-purple-600 border-purple-100',
-            'Meeting Room': 'bg-amber-50 text-amber-600 border-amber-100',
-            'Eclibs': 'bg-amber-50 text-amber-600 border-amber-100'
-        };
-
-        // Initialize Icons
-        lucide.createIcons();
-
-        // --- Render function ---
-        function render() {
-            const bookings = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            const filtered = currentFilter === 'All'
-                ? bookings
-                : bookings.filter(b => b.room === currentFilter);
-
-            if (filtered.length === 0) {
-                list.innerHTML = `
-                    <div class="text-center py-10 opacity-30 select-none">
-                        <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
-                        <p class="text-sm font-bold uppercase tracking-widest text-slate-500">Empty Record</p>
-                    </div>
-                `;
-                lucide.createIcons();
-                return;
-            }
-
-            list.innerHTML = filtered.reverse().map(b => {
-                const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
-                return `
-                <div class="flex items-start justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
-                    <div class="flex gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                            <i data-lucide="user" class="w-5 h-5"></i>
-                        </div>
-                        <div class="flex flex-col">
-                            <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
-                            <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(b.time)}</span>
-                        </div>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${colors}">
-                        ${b.room}
-                    </span>
-                </div>
-                `;
-            }).join('');
-
-            lucide.createIcons();
-        }
-
-        // --- Submit Logic ---
-        form.addEventListener('submit', (e) => {
-            e.preventDefault();
-            warning.classList.add('hidden');
-
-            const fd = new FormData(form);
-            const booking = {
-                room: fd.get('room'),
-                name: fd.get('name').trim(),
-                date: fd.get('date'),
-                time: fd.get('time'),
-                id: Date.now()
-            };
-
-            // Double Booking Check (Same Room + Date + Time)
-            const all = JSON.parse(localStorage.getItem(STORAGE_KEY)) || [];
-            const exists = all.some(x => x.room === booking.room && x.date === booking.date && x.time === booking.time);
-
-            if (exists) {
-                warning.classList.remove('hidden');
-                return;
-            }
-
-            // Save
-            all.push(booking);
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(all));
-
-            // UI feedback
-            render();
-            form.reset();
-
-            // WhatsApp Message
-            const msg = `*Room Reserved*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.time)}\n*Reserved By:* ${booking.name}`;
-            window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-        });
-
-        // --- Filter Logic ---
-        filterBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                filterBtns.forEach(b => b.classList.remove('active-filter', 'bg-white', 'text-slate-800'));
-                filterBtns.forEach(b => b.classList.add('text-slate-500', 'hover:bg-white'));
-
-                btn.classList.add('active-filter');
-                btn.classList.remove('text-slate-500', 'hover:bg-white');
-
-                currentFilter = btn.getAttribute('data-room');
-                render();
-            });
-        });
-
-        // --- Clear All Logic ---
-        clearBtn.addEventListener('click', () => {
-            if (confirm("Permanently clear all booking history?")) {
-                localStorage.removeItem(STORAGE_KEY);
-                render();
-            }
-        });
-
-        // --- Helper ---
-        function formatDate(d) {
-            const parts = d.split('-');
-            return `${parts[2]}/${parts[1]}/${parts[0]}`;
-        }
-        function formatTime(timeStr) {
-            let [hour, minute] = timeStr.split(':');
-            hour = parseInt(hour);
-
-            let period = hour >= 12 ? 'PM' : 'AM';
-            hour = hour % 12 || 12; // يحول 0 لـ 12
-
-            return `${hour}:${minute} ${period}`;
-        }
-
-        render();
-    </script>
+    <script src="main.js"></script>
 </body>
 
 </html>
