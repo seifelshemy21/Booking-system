@@ -41,6 +41,9 @@
         <!-- Main Card -->
         <div class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-white">
             <form id="booking-form" class="space-y-5">
+                <!-- Hidden ID for Editing -->
+                <input type="hidden" id="booking-id" name="id">
+
 
                 <!-- Room Selection -->
                 <div>
@@ -104,15 +107,21 @@
                     <div>This room is already reserved for this time slot.</div>
                 </div>
 
-                <!-- Button -->
-                <button type="submit"
-                    class="group relative w-full flex justify-center py-4 px-4 text-sm font-extrabold rounded-2xl text-white bg-primary hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]">
-                    <span
-                        class="absolute left-0 inset-y-0 flex items-center pl-4 group-hover:translate-x-1 transition-transform">
-                        <i data-lucide="send" class="w-5 h-5"></i>
-                    </span>
-                    Send Booking
-                </button>
+                <!-- Buttons -->
+                <div class="flex flex-col gap-3">
+                    <button type="submit" id="submit-btn"
+                        class="group relative w-full flex justify-center py-4 px-4 text-sm font-extrabold rounded-2xl text-white bg-primary hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]">
+                        <span
+                            class="absolute left-0 inset-y-0 flex items-center pl-4 group-hover:translate-x-1 transition-transform">
+                            <i data-lucide="send" class="w-5 h-5"></i>
+                        </span>
+                        <span id="submit-text">Send Booking</span>
+                    </button>
+                    <button type="button" id="cancel-edit"
+                        class="hidden w-full py-3 px-4 text-xs font-bold rounded-xl text-slate-500 bg-slate-100 hover:bg-slate-200 transition-all uppercase tracking-widest">
+                        Cancel Edit
+                    </button>
+                </div>
             </form>
         </div>
 

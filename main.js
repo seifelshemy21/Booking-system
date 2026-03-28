@@ -3,6 +3,9 @@ const list = document.getElementById('bookings-list');
 const warning = document.getElementById('duplicate-warning');
 const clearBtn = document.getElementById('clear-all');
 const filterBtns = document.querySelectorAll('.filter-btn');
+const cancelEditBtn = document.getElementById('cancel-edit');
+const submitText = document.getElementById('submit-text');
+const bookingIdInput = document.getElementById('booking-id');
 
 // Supabase Connection
 const supabaseUrl = "https://zarwbbluypiwvlndhatf.supabase.co";
@@ -50,19 +53,32 @@ async function render() {
         list.innerHTML = filtered.map(b => {
             const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
             return `
-                    <div class="flex items-start justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
+                    <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
                         <div class="flex gap-4">
                             <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
                                 <i data-lucide="user" class="w-5 h-5"></i>
                             </div>
                             <div class="flex flex-col">
-                                <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
+                                <div class="flex items-center gap-2">
+                                    <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
+                                    <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${colors}">
+                                        ${b.room}
+                                    </span>
+                                </div>
                                 <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(b.time)}</span>
                             </div>
                         </div>
-                        <span class="px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-tighter border ${colors}">
-                            ${b.room}
-                        </span>
+                        
+                        <div class="flex items-center gap-1 transition-opacity">
+                            <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${b.time}')" 
+                                class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
+                                <i data-lucide="edit-3" class="w-4 h-4"></i>
+                            </button>
+                            <button onclick="handleDelete('${b.id}')" 
+                                class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
+                                <i data-lucide="trash-2" class="w-4 h-4"></i>
+                            </button>
+                        </div>
                     </div>
                     `;
         }).join('');
@@ -93,13 +109,23 @@ form.addEventListener('submit', async (e) => {
     }
 
     try {
+        const id = fd.get('id');
+        const isEdit = !!id;
+
         // Double Booking Check (Supabase)
-        const { data: existing, error: checkError } = await supabaseClient
+        // Skip check if we are editing the SAME record
+        let query = supabaseClient
             .from('bookings')
             .select('id')
             .eq('room', booking.room)
             .eq('date', booking.date)
             .eq('time', booking.time);
+        
+        if (isEdit) {
+            query = query.neq('id', id);
+        }
+
+        const { data: existing, error: checkError } = await query;
 
         if (checkError) throw checkError;
 
@@ -108,20 +134,39 @@ form.addEventListener('submit', async (e) => {
             return;
         }
 
-        // Save to Supabase
-        const { error: insertError } = await supabaseClient
-            .from('bookings')
-            .insert([booking]);
+        if (isEdit) {
+            // Update Supabase
+            const { error: updateError } = await supabaseClient
+                .from('bookings')
+                .update(booking)
+                .eq('id', id);
 
-        if (insertError) throw insertError;
+            if (updateError) throw updateError;
+        } else {
+            // Save to Supabase
+            const { error: insertError } = await supabaseClient
+                .from('bookings')
+                .insert([booking]);
+
+            if (insertError) throw insertError;
+        }
 
         // UI feedback
-        form.reset();
+        cancelEdit(); // Reset form and mode
         render();
 
-        // WhatsApp Message
-        const msg = `*Room Reserved*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.time)}\n*Reserved By:* ${booking.name}`;
-        window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
+        // WhatsApp Message (Only for new or if desired for edits)
+        const actionText = isEdit ? "Updated" : "Reserved";
+        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.time)}\n*By:* ${booking.name}`;
+        const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
+        
+        // iOS compatibility fix: window.open is often blocked after async tasks.
+        // On mobile/iOS, direct location change is more reliable.
+        if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
+            window.location.href = whatsappUrl;
+        } else {
+            window.open(whatsappUrl, '_blank');
+        }
 
     } catch (error) {
         console.error("Booking Error:", error.message);
@@ -169,6 +214,48 @@ supabaseClient
         render();
     })
     .subscribe();
+
+// --- Action Handlers (Global for onclick) ---
+window.handleDelete = async (id) => {
+    if (confirm("Delete this booking?")) {
+        try {
+            const { error } = await supabaseClient
+                .from('bookings')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            // render() will be called by realtime listener or manually
+            render();
+        } catch (error) {
+            console.error("Delete Error:", error.message);
+        }
+    }
+};
+
+window.handleEdit = (id, name, room, date, time) => {
+    bookingIdInput.value = id;
+    document.getElementById('user-name').value = name;
+    document.getElementById('room-select').value = room;
+    document.getElementById('booking-date').value = date;
+    document.getElementById('booking-time').value = time;
+
+    submitText.innerText = "Save Changes";
+    cancelEditBtn.classList.remove('hidden');
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function cancelEdit() {
+    form.reset();
+    bookingIdInput.value = '';
+    submitText.innerText = "Send Booking";
+    cancelEditBtn.classList.add('hidden');
+    warning.classList.add('hidden');
+}
+
+cancelEditBtn.addEventListener('click', cancelEdit);
 
 // --- Helpers ---
 function formatDate(d) {
