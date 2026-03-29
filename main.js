@@ -197,9 +197,12 @@ clearBtn.addEventListener('click', async () => {
             const { error } = await supabaseClient
                 .from('bookings')
                 .delete()
-                .neq('id', 0); // Common way to delete all rows
+                .not('id', 'is', null);
 
-            if (error) throw error;
+            if (error) {
+                alert("Failed to clear bookings: " + error.message);
+                throw error;
+            }
             render();
         } catch (error) {
             console.error("Clear Error:", error.message);
