@@ -36,9 +36,13 @@ async function render() {
 
         if (error) throw error;
 
+        console.log("Total Bookings from DB:", bookings);
+
         const filtered = currentFilter === 'All'
             ? bookings
             : (bookings || []).filter(b => b.room === currentFilter);
+        
+        console.log("Filtered Bookings:", filtered);
 
         if (!filtered || filtered.length === 0) {
             list.innerHTML = `
@@ -51,47 +55,79 @@ async function render() {
             return;
         }
 
-        list.innerHTML = filtered.map(b => {
-            const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
-            // Resilient time extraction
-            const startTime = b.start_time || b.time || "00:00";
-            const endTime = b.end_time || (b.time ? formatTimeAddHour(b.time) : "00:00");
-
-            return `
-                    <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
-                        <div class="flex gap-4">
-                            <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
-                                <i data-lucide="user" class="w-5 h-5"></i>
-                            </div>
-                            <div class="flex flex-col">
-                                <div class="flex items-center gap-2">
-                                    <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
-                                    <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${colors}">
-                                        ${b.room}
-                                    </span>
-                                </div>
-                                <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="flex items-center gap-1 transition-opacity">
-                            <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${startTime}', '${endTime}')" 
-                                class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
-                                <i data-lucide="edit-3" class="w-4 h-4"></i>
-                            </button>
-                            <button onclick="handleDelete('${b.id}')" 
-                                class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
-                                <i data-lucide="trash-2" class="w-4 h-4"></i>
-                            </button>
-                        </div>
-                    </div>
-                    `;
-        }).join('');
+        list.innerHTML = filtered.map(b => createBookingElement(b)).join('');
 
         lucide.createIcons();
     } catch (error) {
         console.error("Fetch Error:", error.message);
     }
+}
+
+// --- Dynamic Realtime UI Addition ---
+function addBookingToUI(booking) {
+    if (!booking) return;
+
+    // Check if it matches existing filter
+    if (currentFilter !== 'All' && booking.room !== currentFilter) {
+        return;
+    }
+
+    // Handle potential duplicate (e.g. if render was called nearly at same time)
+    if (document.querySelector(`[data-id="${booking.id}"]`)) {
+        return;
+    }
+
+    // Get the HTML
+    const bookingHtml = createBookingElement(booking);
+
+    // If list currently says "Empty Record", clear it first
+    if (list.querySelector('.opacity-30')) {
+        list.innerHTML = '';
+    }
+
+    // Prepend to top
+    list.insertAdjacentHTML('afterbegin', bookingHtml);
+
+    // Re-init icons only for the new element to save performance
+    lucide.createIcons();
+}
+
+// --- Helper: Generate Booking HTML ---
+function createBookingElement(b) {
+    const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
+    // Resilient time extraction
+    const startTime = b.start_time || b.time || "00:00";
+    const endTime = b.end_time || (b.time ? formatTimeAddHour(b.time) : "00:00");
+
+    return `
+            <div data-id="${b.id}" class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
+                <div class="flex gap-4">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+                        <i data-lucide="user" class="w-5 h-5"></i>
+                    </div>
+                    <div class="flex flex-col">
+                        <div class="flex items-center gap-2">
+                            <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
+                            <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${colors}">
+                                ${b.room}
+                            </span>
+                        </div>
+                        <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
+                    </div>
+                </div>
+                
+                <div class="flex items-center gap-1 transition-opacity">
+                    <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${startTime}', '${endTime}')" 
+                        class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="handleDelete('${b.id}')" 
+                        class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
+                </div>
+            </div>
+            `;
 }
 
 // --- Submit Logic ---
@@ -227,8 +263,8 @@ clearBtn.addEventListener('click', async () => {
 // --- Realtime Subscription ---
 supabaseClient
     .channel('public:bookings')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, () => {
-        render();
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, (payload) => {
+        addBookingToUI(payload.new);
     })
     .subscribe();
 
