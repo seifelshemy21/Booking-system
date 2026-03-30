@@ -6,6 +6,7 @@ const filterBtns = document.querySelectorAll('.filter-btn');
 const cancelEditBtn = document.getElementById('cancel-edit');
 const submitText = document.getElementById('submit-text');
 const bookingIdInput = document.getElementById('booking-id');
+const warningMessage = document.getElementById('warning-message');
 
 // Supabase Connection
 const supabaseUrl = "https://zarwbbluypiwvlndhatf.supabase.co";
@@ -52,6 +53,10 @@ async function render() {
 
         list.innerHTML = filtered.map(b => {
             const colors = ROOM_COLORS[b.room] || 'bg-slate-50 text-slate-600 border-slate-100';
+            // Resilient time extraction
+            const startTime = b.start_time || b.time || "00:00";
+            const endTime = b.end_time || (b.time ? formatTimeAddHour(b.time) : "00:00");
+
             return `
                     <div class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
                         <div class="flex gap-4">
@@ -65,12 +70,12 @@ async function render() {
                                         ${b.room}
                                     </span>
                                 </div>
-                                <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(b.time)}</span>
+                                <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
                             </div>
                         </div>
                         
                         <div class="flex items-center gap-1 transition-opacity">
-                            <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${b.time}')" 
+                            <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${startTime}', '${endTime}')" 
                                 class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
                                 <i data-lucide="edit-3" class="w-4 h-4"></i>
                             </button>
@@ -99,12 +104,19 @@ form.addEventListener('submit', async (e) => {
         room: fd.get('room'),
         name: fd.get('name').trim(),
         date: fd.get('date'),
-        time: fd.get('time')
+        start_time: fd.get('start_time'),
+        end_time: fd.get('end_time')
     };
 
-    // Validation
-    if (!booking.room || !booking.name || !booking.date || !booking.time) {
+    // Basic Field Validation
+    if (!booking.room || !booking.name || !booking.date || !booking.start_time || !booking.end_time) {
         alert("Please fill in all fields.");
+        return;
+    }
+
+    // Logical Time Check
+    if (booking.start_time >= booking.end_time) {
+        alert("End time must be after start time.");
         return;
     }
 
@@ -112,14 +124,15 @@ form.addEventListener('submit', async (e) => {
         const id = fd.get('id');
         const isEdit = !!id;
 
-        // Double Booking Check (Supabase)
-        // Skip check if we are editing the SAME record
+        // Overlap Check (Supabase)
+        // Rule: (existing_start < new_end) AND (existing_end > new_start)
         let query = supabaseClient
             .from('bookings')
             .select('id')
             .eq('room', booking.room)
             .eq('date', booking.date)
-            .eq('time', booking.time);
+            .lt('start_time', booking.end_time)
+            .gt('end_time', booking.start_time);
         
         if (isEdit) {
             query = query.neq('id', id);
@@ -130,6 +143,7 @@ form.addEventListener('submit', async (e) => {
         if (checkError) throw checkError;
 
         if (existing && existing.length > 0) {
+            warningMessage.innerText = "This room is already reserved for this time range.";
             warning.classList.remove('hidden');
             return;
         }
@@ -155,9 +169,9 @@ form.addEventListener('submit', async (e) => {
         cancelEdit(); // Reset form and mode
         render();
 
-        // WhatsApp Message (Only for new or if desired for edits)
+        // WhatsApp Message
         const actionText = isEdit ? "Updated" : "Reserved";
-        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.time)}\n*By:* ${booking.name}`;
+        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.start_time)} → ${formatTime(booking.end_time)}\n*By:* ${booking.name}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
         
         // iOS compatibility fix: window.open is often blocked after async tasks.
@@ -236,12 +250,13 @@ window.handleDelete = async (id) => {
     }
 };
 
-window.handleEdit = (id, name, room, date, time) => {
+window.handleEdit = (id, name, room, date, startTime, endTime) => {
     bookingIdInput.value = id;
     document.getElementById('user-name').value = name;
     document.getElementById('room-select').value = room;
     document.getElementById('booking-date').value = date;
-    document.getElementById('booking-time').value = time;
+    document.getElementById('start-time').value = startTime;
+    document.getElementById('end-time').value = endTime;
 
     submitText.innerText = "Save Changes";
     cancelEditBtn.classList.remove('hidden');
@@ -267,11 +282,27 @@ function formatDate(d) {
 }
 
 function formatTime(timeStr) {
-    let [hour, minute] = timeStr.split(':');
-    hour = parseInt(hour);
-    const period = hour >= 12 ? 'PM' : 'AM';
-    hour = hour % 12 || 12;
-    return `${hour}:${minute} ${period}`;
+    if (!timeStr) return "N/A";
+    try {
+        let [hour, minute] = timeStr.split(':');
+        hour = parseInt(hour);
+        const period = hour >= 12 ? 'PM' : 'AM';
+        hour = hour % 12 || 12;
+        return `${hour}:${minute.substring(0, 2)} ${period}`;
+    } catch (e) {
+        return timeStr;
+    }
+}
+
+function formatTimeAddHour(timeStr) {
+    if (!timeStr) return "00:00";
+    try {
+        let [hour, minute] = timeStr.split(':');
+        let newHour = (parseInt(hour) + 1) % 24;
+        return `${newHour.toString().padStart(2, '0')}:${minute}`;
+    } catch (e) {
+        return timeStr;
+    }
 }
 
 // Initial render

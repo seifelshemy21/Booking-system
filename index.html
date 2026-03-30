@@ -83,18 +83,26 @@
                     </div>
                 </div>
 
-                <!-- Date & Time -->
+                <!-- Date -->
+                <div>
+                    <label for="booking-date"
+                        class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Booking Date</label>
+                    <input type="date" id="booking-date" name="date" required
+                        class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                </div>
+
+                <!-- Time Range -->
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label for="booking-date"
-                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Date</label>
-                        <input type="date" id="booking-date" name="date" required
+                        <label for="start-time"
+                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Start Time</label>
+                        <input type="time" id="start-time" name="start_time" required
                             class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
                     </div>
                     <div>
-                        <label for="booking-time"
-                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Time</label>
-                        <input type="time" id="booking-time" name="time" required
+                        <label for="end-time"
+                            class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">End Time</label>
+                        <input type="time" id="end-time" name="end_time" required
                             class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
                     </div>
                 </div>
@@ -104,7 +112,7 @@
                     class="hidden animate-pulse flex items-center p-3.5 text-sm text-rose-800 border-2 border-rose-100 rounded-2xl bg-rose-50"
                     role="alert">
                     <i data-lucide="alert-triangle" class="w-5 h-5 mr-3 flex-shrink-0"></i>
-                    <div>This room is already reserved for this time slot.</div>
+                    <div id="warning-message">This room is already reserved for this time range.</div>
                 </div>
 
                 <!-- Buttons -->
