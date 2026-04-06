@@ -10,6 +10,9 @@ const warningMessage = document.getElementById('warning-message');
 const officeForm = document.getElementById('office-request-form');
 const officeList = document.getElementById('office-list');
 const officeSuccess = document.getElementById('office-success');
+const officeIdInput = document.getElementById('office-id');
+const officeSubmitText = document.getElementById('office-submit-text');
+const cancelEditOfficeBtn = document.getElementById('cancel-edit-office');
 
 // Tabs
 const tabBookings = document.getElementById('tab-bookings');
@@ -298,19 +301,31 @@ officeForm.addEventListener('submit', async (e) => {
     };
 
     try {
-        const { error } = await supabaseClient
-            .from('office_requests')
-            .insert([request]);
+        const id = fd.get('id');
+        const isEdit = !!id;
 
-        if (error) throw error;
+        if (isEdit) {
+            const { error } = await supabaseClient
+                .from('office_requests')
+                .update(request)
+                .eq('id', id);
 
-        officeForm.reset();
+            if (error) throw error;
+        } else {
+            const { error } = await supabaseClient
+                .from('office_requests')
+                .insert([request]);
+
+            if (error) throw error;
+        }
+
+        cancelEditOffice();
         officeSuccess.classList.remove('hidden');
         setTimeout(() => officeSuccess.classList.add('hidden'), 3000);
         renderOfficeRequests();
     } catch (error) {
         console.error("Office Request Error:", error.message);
-        alert("Failed to submit request.");
+        alert("Failed to save request.");
     }
 });
 
@@ -335,18 +350,25 @@ async function renderOfficeRequests() {
         }
 
         officeList.innerHTML = requests.map(r => `
-            <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+            <div class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-primary/20 transition-all">
                 <div class="flex flex-col">
-                    <span class="text-sm font-extrabold text-slate-800">${r.client_name}</span>
-                    <span class="text-xs text-slate-500 font-medium">${r.phone}</span>
+                    <div class="flex items-center gap-2 mb-1">
+                        <span class="text-sm font-extrabold text-slate-800">${r.client_name}</span>
+                        <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase border border-slate-100 bg-slate-50 text-slate-500">
+                            ${r.room_name}
+                        </span>
+                    </div>
+                    <span class="text-[10px] text-slate-400 font-medium">${r.phone} • ${new Date(r.created_at).toLocaleDateString()}</span>
                 </div>
-                <div class="text-right">
-                    <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase text-slate-600 block mb-1">
-                        ${r.room_name}
-                    </span>
-                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
-                        ${new Date(r.created_at).toLocaleDateString()}
-                    </span>
+                <div class="flex items-center gap-1">
+                    <button onclick="handleEditOffice('${r.id}', \`${r.room_name.replace(/'/g, "\\'")}\`, \`${r.client_name.replace(/'/g, "\\'")}\`, '${r.phone}')" 
+                        class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
+                        <i data-lucide="edit-3" class="w-4 h-4"></i>
+                    </button>
+                    <button onclick="handleDeleteOffice('${r.id}')" 
+                        class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
+                        <i data-lucide="trash-2" class="w-4 h-4"></i>
+                    </button>
                 </div>
             </div>
         `).join('');
@@ -478,6 +500,45 @@ function formatTimeAddHour(timeStr) {
         return timeStr;
     }
 }
+
+// --- Office Action Handlers ---
+window.handleDeleteOffice = async (id) => {
+    if (confirm("Delete this office request?")) {
+        try {
+            const { error } = await supabaseClient
+                .from('office_requests')
+                .delete()
+                .eq('id', id);
+
+            if (error) throw error;
+            renderOfficeRequests();
+        } catch (error) {
+            console.error("Delete Office Error:", error.message);
+        }
+    }
+};
+
+window.handleEditOffice = (id, room, name, phone) => {
+    officeIdInput.value = id;
+    document.getElementById('off-room-name').value = room;
+    document.getElementById('off-client-name').value = name;
+    document.getElementById('off-phone').value = phone;
+
+    officeSubmitText.innerText = "Save Changes";
+    cancelEditOfficeBtn.classList.remove('hidden');
+    
+    // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+};
+
+function cancelEditOffice() {
+    officeForm.reset();
+    officeIdInput.value = '';
+    officeSubmitText.innerText = "Submit Request";
+    cancelEditOfficeBtn.classList.add('hidden');
+}
+
+cancelEditOfficeBtn.addEventListener('click', cancelEditOffice);
 
 // Initial render
 render();
