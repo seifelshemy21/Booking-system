@@ -7,6 +7,15 @@ const cancelEditBtn = document.getElementById('cancel-edit');
 const submitText = document.getElementById('submit-text');
 const bookingIdInput = document.getElementById('booking-id');
 const warningMessage = document.getElementById('warning-message');
+const officeForm = document.getElementById('office-request-form');
+const officeList = document.getElementById('office-list');
+const officeSuccess = document.getElementById('office-success');
+
+// Tabs
+const tabBookings = document.getElementById('tab-bookings');
+const tabOffice = document.getElementById('tab-office');
+const sectionBookings = document.getElementById('section-bookings');
+const sectionOffice = document.getElementById('section-office');
 
 // Supabase Connection
 const supabaseUrl = "https://zarwbbluypiwvlndhatf.supabase.co";
@@ -99,6 +108,18 @@ function createBookingElement(b) {
     const startTime = b.start_time || b.time || "00:00";
     const endTime = b.end_time || (b.time ? formatTimeAddHour(b.time) : "00:00");
 
+    const attendanceBtn = b.attended 
+        ? `<button onclick="handleToggleAttendance('${b.id}', true)" 
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold hover:bg-emerald-100 transition-all border border-emerald-100/50 shadow-sm shadow-emerald-100/20 active:scale-95 group/btn">
+            <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
+            <span>ARRIVED</span>
+           </button>`
+        : `<button onclick="handleToggleAttendance('${b.id}', false)" 
+                class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-rose-50 text-rose-700 text-[10px] font-extrabold hover:bg-rose-100 transition-all border border-rose-100/50 shadow-sm shadow-rose-100/20 active:scale-95 group/btn">
+            <i data-lucide="x" class="w-3.5 h-3.5 stroke-[3]"></i>
+            <span>NOT ARRIVED</span>
+           </button>`;
+
     return `
             <div data-id="${b.id}" class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
                 <div class="flex gap-4">
@@ -116,7 +137,9 @@ function createBookingElement(b) {
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-1 transition-opacity">
+                <div class="flex items-center gap-2 transition-opacity">
+                    ${attendanceBtn}
+                    <div class="h-8 w-px bg-slate-100 mx-1"></div>
                     <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${startTime}', '${endTime}')" 
                         class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
                         <i data-lucide="edit-3" class="w-4 h-4"></i>
@@ -240,6 +263,99 @@ filterBtns.forEach(btn => {
     });
 });
 
+// --- Tab Logic ---
+const switchTab = (tab) => {
+    if (tab === 'bookings') {
+        sectionBookings.classList.remove('hidden');
+        sectionOffice.classList.add('hidden');
+        tabBookings.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        tabBookings.classList.remove('text-slate-500');
+        tabOffice.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+        tabOffice.classList.add('text-slate-500');
+        render();
+    } else {
+        sectionBookings.classList.add('hidden');
+        sectionOffice.classList.remove('hidden');
+        tabOffice.classList.add('bg-white', 'text-slate-800', 'shadow-sm');
+        tabOffice.classList.remove('text-slate-500');
+        tabBookings.classList.remove('bg-white', 'text-slate-800', 'shadow-sm');
+        tabBookings.classList.add('text-slate-500');
+        renderOfficeRequests();
+    }
+};
+
+tabBookings.addEventListener('click', () => switchTab('bookings'));
+tabOffice.addEventListener('click', () => switchTab('office'));
+
+// --- Office Request Logic ---
+officeForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const fd = new FormData(officeForm);
+    const request = {
+        room_name: fd.get('room_name').trim(),
+        client_name: fd.get('client_name').trim(),
+        phone: fd.get('phone').trim()
+    };
+
+    try {
+        const { error } = await supabaseClient
+            .from('office_requests')
+            .insert([request]);
+
+        if (error) throw error;
+
+        officeForm.reset();
+        officeSuccess.classList.remove('hidden');
+        setTimeout(() => officeSuccess.classList.add('hidden'), 3000);
+        renderOfficeRequests();
+    } catch (error) {
+        console.error("Office Request Error:", error.message);
+        alert("Failed to submit request.");
+    }
+});
+
+async function renderOfficeRequests() {
+    try {
+        const { data: requests, error } = await supabaseClient
+            .from('office_requests')
+            .select('*')
+            .order('created_at', { ascending: false });
+
+        if (error) throw error;
+
+        if (!requests || requests.length === 0) {
+            officeList.innerHTML = `
+                <div class="text-center py-10 opacity-30 select-none">
+                    <i data-lucide="inbox" class="w-12 h-12 mx-auto mb-2 text-slate-300"></i>
+                    <p class="text-sm font-bold uppercase tracking-widest text-slate-500">No Requests</p>
+                </div>
+            `;
+            lucide.createIcons();
+            return;
+        }
+
+        officeList.innerHTML = requests.map(r => `
+            <div class="p-4 bg-slate-50 border border-slate-100 rounded-2xl flex items-center justify-between">
+                <div class="flex flex-col">
+                    <span class="text-sm font-extrabold text-slate-800">${r.client_name}</span>
+                    <span class="text-xs text-slate-500 font-medium">${r.phone}</span>
+                </div>
+                <div class="text-right">
+                    <span class="px-3 py-1 bg-white border border-slate-200 rounded-lg text-[10px] font-black uppercase text-slate-600 block mb-1">
+                        ${r.room_name}
+                    </span>
+                    <span class="text-[9px] text-slate-400 font-bold uppercase tracking-tighter">
+                        ${new Date(r.created_at).toLocaleDateString()}
+                    </span>
+                </div>
+            </div>
+        `).join('');
+        lucide.createIcons();
+    } catch (error) {
+        console.error("Fetch Office Error:", error.message);
+    }
+}
+
 // --- Clear All Logic ---
 clearBtn.addEventListener('click', async () => {
     if (confirm("Permanently clear all booking history? This cannot be undone.")) {
@@ -268,6 +384,14 @@ supabaseClient
     })
     .subscribe();
 
+// Realtime Office Requests
+supabaseClient
+    .channel('public:office_requests')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'office_requests' }, (payload) => {
+        renderOfficeRequests();
+    })
+    .subscribe();
+
 // --- Action Handlers (Global for onclick) ---
 window.handleDelete = async (id) => {
     if (confirm("Delete this booking?")) {
@@ -283,6 +407,20 @@ window.handleDelete = async (id) => {
         } catch (error) {
             console.error("Delete Error:", error.message);
         }
+    }
+};
+
+window.handleToggleAttendance = async (id, currentStatus) => {
+    try {
+        const { error } = await supabaseClient
+            .from('bookings')
+            .update({ attended: !currentStatus })
+            .eq('id', id);
+
+        if (error) throw error;
+        render();
+    } catch (error) {
+        console.error("Attendance Toggle Error:", error.message);
     }
 };
 

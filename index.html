@@ -29,14 +29,26 @@
     <!-- Main Container -->
     <div class="max-w-md w-full my-8">
 
-        <!-- Header -->
-        <div class="text-center mb-8">
-            <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center justify-center">
-                <i data-lucide="door-open" class="w-8 h-8 mr-2 text-primary"></i>
-                Room Reservations
-            </h1>
-            <p class="text-slate-500 mt-2">Pick a room, reserve a slot, and notify the team</p>
+        <!-- Navigation Tabs -->
+        <div class="flex bg-slate-200/50 p-1 rounded-2xl mb-6 backdrop-blur-sm">
+            <button id="tab-bookings" class="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all bg-white text-slate-800 shadow-sm">
+                Room Bookings
+            </button>
+            <button id="tab-office" class="flex-1 py-3 px-4 rounded-xl text-sm font-bold transition-all text-slate-500 hover:text-slate-700">
+                Office Requests
+            </button>
         </div>
+
+        <!-- Room Reservations Section -->
+        <div id="section-bookings">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center justify-center">
+                    <i data-lucide="door-open" class="w-8 h-8 mr-2 text-primary"></i>
+                    Room Reservations
+                </h1>
+                <p class="text-slate-500 mt-2">Pick a room, reserve a slot, and notify the team</p>
+            </div>
 
         <!-- Main Card -->
         <div class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-white">
@@ -134,10 +146,10 @@
         </div>
 
         <!-- History Card -->
-        <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
+        <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-100 premium-shadow">
             <div class="flex items-center justify-between mb-6">
                 <h2 class="text-xl font-extrabold text-slate-800 flex items-center">
-                    <i data-lucide="history" class="w-5 h-5 mr-2 text-slate-400"></i>
+                    <i data-lucide="calendar-check-2" class="w-5 h-5 mr-2 text-primary"></i>
                     Recent Bookings
                 </h2>
                 <button id="clear-all"
@@ -175,6 +187,89 @@
             </div>
         </div>
 
+        </div>
+
+        <!-- Office Requests Section (Hidden by default) -->
+        <div id="section-office" class="hidden animate-in fade-in duration-300">
+            <!-- Header -->
+            <div class="text-center mb-8">
+                <h1 class="text-3xl font-extrabold text-slate-800 tracking-tight flex items-center justify-center">
+                    <i data-lucide="building-2" class="w-8 h-8 mr-2 text-primary"></i>
+                    Office Requests
+                </h1>
+                <p class="text-slate-500 mt-2">External clients can request a room or office</p>
+            </div>
+
+            <!-- Request Form Card -->
+            <div class="bg-white rounded-3xl shadow-2xl p-8 mb-8 border border-white">
+                <form id="office-request-form" class="space-y-5">
+                    <!-- Room Name -->
+                    <div>
+                        <label for="off-room-name" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Room Name</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                                <i data-lucide="map-pin" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="off-room-name" name="room_name" required placeholder="Which room is requested?"
+                                class="block w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Client Name -->
+                    <div>
+                        <label for="off-client-name" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Client Name</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                                <i data-lucide="user" class="w-5 h-5"></i>
+                            </span>
+                            <input type="text" id="off-client-name" name="client_name" required placeholder="Full name of client"
+                                class="block w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div>
+                        <label for="off-phone" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Phone Number</label>
+                        <div class="relative">
+                            <span class="absolute inset-y-0 left-0 pl-3.5 flex items-center text-slate-400 pointer-events-none">
+                                <i data-lucide="phone" class="w-5 h-5"></i>
+                            </span>
+                            <input type="tel" id="off-phone" name="phone" required placeholder="e.g. +123 456 789"
+                                class="block w-full pl-11 pr-3 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
+                        </div>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button type="submit"
+                        class="group relative w-full flex justify-center py-4 px-4 text-sm font-extrabold rounded-2xl text-white bg-primary hover:bg-emerald-600 focus:outline-none focus:ring-4 focus:ring-emerald-100 transition-all shadow-xl shadow-emerald-100 active:scale-[0.98]">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-4 group-hover:translate-x-1 transition-transform">
+                            <i data-lucide="plus-circle" class="w-5 h-5"></i>
+                        </span>
+                        <span>Submit Request</span>
+                    </button>
+                    
+                    <div id="office-success" class="hidden flex items-center p-3.5 text-sm text-emerald-800 border-2 border-emerald-100 rounded-2xl bg-emerald-50">
+                        <i data-lucide="check-circle" class="w-5 h-5 mr-3 flex-shrink-0"></i>
+                        <div>Request submitted successfully!</div>
+                    </div>
+                </form>
+            </div>
+
+            <!-- Office Requests List Card -->
+            <div class="bg-white rounded-3xl shadow-xl p-6 border border-slate-100">
+                <div class="flex items-center justify-between mb-6">
+                    <h2 class="text-xl font-extrabold text-slate-800 flex items-center">
+                        <i data-lucide="list" class="w-5 h-5 mr-2 text-slate-400"></i>
+                        External Requests
+                    </h2>
+                </div>
+
+                <div id="office-list" class="space-y-4 max-h-[300px] overflow-y-auto pr-2 scroll-smooth custom-scrollbar">
+                    <!-- Requests injected here -->
+                </div>
+            </div>
+        </div>
+
         <footer class="mt-12 text-center text-slate-400 text-[10px] font-bold uppercase tracking-[2px]">
             &copy; 2026 Internal Booking Tool
         </footer>
@@ -194,6 +289,31 @@
         .custom-scrollbar::-webkit-scrollbar-thumb {
             background-color: #e2e8f0;
             border-radius: 10px;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Professional shadow for cards */
+        .premium-shadow {
+            box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.05), 0 4px 12px -5px rgba(0, 0, 0, 0.02);
+        }
+
+        /* Smooth scale for buttons */
+        .btn-interact {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .btn-interact:hover {
+            transform: translateY(-1px);
+        }
+        .btn-interact:active {
+            transform: translateY(0) scale(0.96);
         }
     </style>
 
