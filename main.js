@@ -32,6 +32,7 @@ const ROOM_COLORS = {
     'Micron': 'bg-blue-50 text-blue-600 border-blue-100',
     'Phimton': 'bg-purple-50 text-purple-600 border-purple-100',
     'Meeting Room': 'bg-amber-50 text-amber-600 border-amber-100',
+    'Median': 'bg-amber-50 text-amber-600 border-amber-100',
     'Eclibs': 'bg-emerald-50 text-emerald-600 border-emerald-100'
 };
 
