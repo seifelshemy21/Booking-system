@@ -33,7 +33,9 @@ const ROOM_COLORS = {
     'Phimton': 'bg-purple-50 text-purple-600 border-purple-100',
     'Meeting Room': 'bg-amber-50 text-amber-600 border-amber-100',
     'Median': 'bg-amber-50 text-amber-600 border-amber-100',
-    'Eclibs': 'bg-emerald-50 text-emerald-600 border-emerald-100'
+    'Eclipse': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    'Overlook': 'bg-emerald-50 text-emerald-600 border-emerald-100',
+    'Andalusian': 'bg-emerald-50 text-emerald-600 border-emerald-100',
 };
 
 // Initialize Icons
@@ -54,7 +56,7 @@ async function render() {
         const filtered = currentFilter === 'All'
             ? bookings
             : (bookings || []).filter(b => b.room === currentFilter);
-        
+
         console.log("Filtered Bookings:", filtered);
 
         if (!filtered || filtered.length === 0) {
@@ -112,7 +114,7 @@ function createBookingElement(b) {
     const startTime = b.start_time || b.time || "00:00";
     const endTime = b.end_time || (b.time ? formatTimeAddHour(b.time) : "00:00");
 
-    const attendanceBtn = b.attended 
+    const attendanceBtn = b.attended
         ? `<button onclick="handleToggleAttendance('${b.id}', true)" 
                 class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-extrabold hover:bg-emerald-100 transition-all border border-emerald-100/50 shadow-sm shadow-emerald-100/20 active:scale-95 group/btn">
             <i data-lucide="check" class="w-3.5 h-3.5 stroke-[3]"></i>
@@ -125,33 +127,36 @@ function createBookingElement(b) {
            </button>`;
 
     return `
-            <div data-id="${b.id}" class="flex items-center justify-between p-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
-                <div class="flex gap-4">
-                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
+            <div data-id="${b.id}" class="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
+                <div class="flex gap-3 sm:gap-4 items-start sm:items-center overflow-hidden w-full sm:w-auto">
+                    <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 flex-shrink-0 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
                         <i data-lucide="user" class="w-5 h-5"></i>
                     </div>
-                    <div class="flex flex-col">
-                        <div class="flex items-center gap-2">
-                            <span class="text-sm font-extrabold text-slate-800">${b.name}</span>
+                    <div class="flex flex-col min-w-0 flex-1">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="text-sm font-extrabold text-slate-800 truncate">${b.name}</span>
                             <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase tracking-tighter border ${colors}">
                                 ${b.room}
                             </span>
                         </div>
-                        <span class="text-xs text-slate-400 font-medium">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
+                        <span class="text-xs text-slate-400 font-medium truncate">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
+                        ${b.note ? `<div class="text-xs text-slate-500 mt-1 flex items-start gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 mt-0.5 opacity-70 flex-shrink-0"></i><span class="flex-1 line-clamp-2" title="${b.note.replace(/\"/g, '&quot;')}">${b.note}</span></div>` : ''}
                     </div>
                 </div>
                 
-                <div class="flex items-center gap-2 transition-opacity">
+                <div class="flex items-center justify-between sm:justify-end gap-2 transition-opacity w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0">
                     ${attendanceBtn}
-                    <div class="h-8 w-px bg-slate-100 mx-1"></div>
-                    <button onclick="handleEdit('${b.id}', '${b.name}', '${b.room}', '${b.date}', '${startTime}', '${endTime}')" 
-                        class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
-                        <i data-lucide="edit-3" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="handleDelete('${b.id}')" 
-                        class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
-                        <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    </button>
+                    <div class="flex items-center">
+                        <div class="h-8 w-px bg-slate-100 mx-1 hidden sm:block"></div>
+                        <button onclick="handleEdit('${b.id}', \`${b.name.replace(/`/g, '\\`')}\`, \`${b.room.replace(/`/g, '\\`')}\`, '${b.date}', '${startTime}', '${endTime}', \`${(b.note || '').replace(/`/g, '\\`')}\`)" 
+                            class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
+                            <i data-lucide="edit-3" class="w-4 h-4"></i>
+                        </button>
+                        <button onclick="handleDelete('${b.id}')" 
+                            class="p-2 text-slate-400 hover:text-rose-500 hover:bg-rose-50 rounded-lg transition-all" title="Delete">
+                            <i data-lucide="trash-2" class="w-4 h-4"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
             `;
@@ -168,7 +173,8 @@ form.addEventListener('submit', async (e) => {
         name: fd.get('name').trim(),
         date: fd.get('date'),
         start_time: fd.get('start_time'),
-        end_time: fd.get('end_time')
+        end_time: fd.get('end_time'),
+        note: fd.get('note') ? fd.get('note').trim() : null
     };
 
     // Basic Field Validation
@@ -196,7 +202,7 @@ form.addEventListener('submit', async (e) => {
             .eq('date', booking.date)
             .lt('start_time', booking.end_time)
             .gt('end_time', booking.start_time);
-        
+
         if (isEdit) {
             query = query.neq('id', id);
         }
@@ -234,9 +240,10 @@ form.addEventListener('submit', async (e) => {
 
         // WhatsApp Message
         const actionText = isEdit ? "Updated" : "Reserved";
-        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.start_time)} → ${formatTime(booking.end_time)}\n*By:* ${booking.name}`;
+        const noteStr = booking.note ? `\n*Note:* ${booking.note}` : "";
+        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.start_time)} → ${formatTime(booking.end_time)}\n*By:* ${booking.name}${noteStr}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
-        
+
         // iOS compatibility fix: window.open is often blocked after async tasks.
         // On mobile/iOS, direct location change is more reliable.
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
@@ -298,7 +305,8 @@ officeForm.addEventListener('submit', async (e) => {
     const request = {
         room_name: fd.get('room_name').trim(),
         client_name: fd.get('client_name').trim(),
-        phone: fd.get('phone').trim()
+        phone: fd.get('phone').trim(),
+        note: fd.get('note') ? fd.get('note').trim() : null
     };
 
     try {
@@ -351,18 +359,19 @@ async function renderOfficeRequests() {
         }
 
         officeList.innerHTML = requests.map(r => `
-            <div class="p-4 bg-white border border-slate-100 rounded-2xl flex items-center justify-between group hover:border-primary/20 transition-all">
-                <div class="flex flex-col">
-                    <div class="flex items-center gap-2 mb-1">
-                        <span class="text-sm font-extrabold text-slate-800">${r.client_name}</span>
+            <div class="p-4 bg-white border border-slate-100 rounded-2xl flex flex-col sm:flex-row sm:items-center justify-between gap-4 group hover:border-primary/20 transition-all">
+                <div class="flex flex-col overflow-hidden w-full sm:w-auto flex-1">
+                    <div class="flex flex-wrap items-center gap-2 mb-1">
+                        <span class="text-sm font-extrabold text-slate-800 truncate">${r.client_name}</span>
                         <span class="px-2 py-0.5 rounded-md text-[8px] font-black uppercase border border-slate-100 bg-slate-50 text-slate-500">
                             ${r.room_name}
                         </span>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-medium">${r.phone} • ${new Date(r.created_at).toLocaleDateString()}</span>
+                    <span class="text-[10px] text-slate-400 font-medium truncate">${r.phone} • ${new Date(r.created_at).toLocaleDateString()}</span>
+                    ${r.note ? `<div class="text-xs text-slate-500 mt-1 flex items-start gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 mt-0.5 opacity-70 flex-shrink-0"></i><span class="flex-1 line-clamp-2" title="${r.note.replace(/\"/g, '&quot;')}">${r.note}</span></div>` : ''}
                 </div>
-                <div class="flex items-center gap-1">
-                    <button onclick="handleEditOffice('${r.id}', \`${r.room_name.replace(/'/g, "\\'")}\`, \`${r.client_name.replace(/'/g, "\\'")}\`, '${r.phone}')" 
+                <div class="flex items-center justify-end gap-1 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0">
+                    <button onclick="handleEditOffice('${r.id}', \`${(r.room_name || '').replace(/`/g, '\\`')}\`, \`${(r.client_name || '').replace(/`/g, '\\`')}\`, '${r.phone}', \`${(r.note || '').replace(/`/g, '\\`')}\`)" 
                         class="p-2 text-slate-400 hover:text-primary hover:bg-primary/5 rounded-lg transition-all" title="Edit">
                         <i data-lucide="edit-3" class="w-4 h-4"></i>
                     </button>
@@ -447,17 +456,18 @@ window.handleToggleAttendance = async (id, currentStatus) => {
     }
 };
 
-window.handleEdit = (id, name, room, date, startTime, endTime) => {
+window.handleEdit = (id, name, room, date, startTime, endTime, note) => {
     bookingIdInput.value = id;
     document.getElementById('user-name').value = name;
     document.getElementById('room-select').value = room;
     document.getElementById('booking-date').value = date;
     document.getElementById('start-time').value = startTime;
     document.getElementById('end-time').value = endTime;
+    document.getElementById('booking-note').value = note && note !== 'null' ? note : '';
 
     submitText.innerText = "Save Changes";
     cancelEditBtn.classList.remove('hidden');
-    
+
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
@@ -519,15 +529,16 @@ window.handleDeleteOffice = async (id) => {
     }
 };
 
-window.handleEditOffice = (id, room, name, phone) => {
+window.handleEditOffice = (id, room, name, phone, note) => {
     officeIdInput.value = id;
     document.getElementById('off-room-name').value = room;
     document.getElementById('off-client-name').value = name;
     document.getElementById('off-phone').value = phone;
+    document.getElementById('off-note').value = note && note !== 'null' ? note : '';
 
     officeSubmitText.innerText = "Save Changes";
     cancelEditOfficeBtn.classList.remove('hidden');
-    
+
     // Scroll to form
     window.scrollTo({ top: 0, behavior: 'smooth' });
 };
