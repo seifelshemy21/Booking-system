@@ -139,7 +139,7 @@ function createBookingElement(b) {
                                 ${b.room}
                             </span>
                         </div>
-                        <span class="text-xs text-slate-400 font-medium truncate">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
+                        <span class="text-xs text-slate-400 font-medium truncate">${formatDate(b.date)} • <br/> ${formatTime(startTime)} → ${formatTime(endTime)}</span>
                         ${b.note ? `<div class="text-xs text-slate-500 mt-1 flex items-start gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 mt-0.5 opacity-70 flex-shrink-0"></i><span class="flex-1 line-clamp-2" title="${b.note.replace(/\"/g, '&quot;')}">${b.note}</span></div>` : ''}
                     </div>
                 </div>
@@ -367,7 +367,7 @@ async function renderOfficeRequests() {
                             ${r.room_name}
                         </span>
                     </div>
-                    <span class="text-[10px] text-slate-400 font-medium truncate">${r.phone} • ${new Date(r.created_at).toLocaleDateString()}</span>
+                    <span class="text-[14px] text-slate-400 font-medium truncate">${r.phone} <br/> ${new Date(r.created_at).toLocaleDateString()}</span>
                     ${r.note ? `<div class="text-xs text-slate-500 mt-1 flex items-start gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 mt-0.5 opacity-70 flex-shrink-0"></i><span class="flex-1 line-clamp-2" title="${r.note.replace(/\"/g, '&quot;')}">${r.note}</span></div>` : ''}
                 </div>
                 <div class="flex items-center justify-end gap-1 w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0">
