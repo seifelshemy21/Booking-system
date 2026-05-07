@@ -13,6 +13,11 @@ const officeSuccess = document.getElementById('office-success');
 const officeIdInput = document.getElementById('office-id');
 const officeSubmitText = document.getElementById('office-submit-text');
 const cancelEditOfficeBtn = document.getElementById('cancel-edit-office');
+const addDateBtn = document.getElementById('add-date-btn');
+const dateInput = document.getElementById('booking-date');
+const selectedDatesContainer = document.getElementById('selected-dates-container');
+
+let selectedDates = [];
 
 // Tabs
 const tabBookings = document.getElementById('tab-bookings');
@@ -127,7 +132,7 @@ function createBookingElement(b) {
            </button>`;
 
     return `
-            <div data-id="${b.id}" class="flex flex-col sm:flex-row sm:items-center justify-between p-4 gap-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
+            <div data-id="${b.id}" class="sm:flex-row sm:items-center justify-between p-4 gap-4 bg-white border border-slate-100 rounded-2xl hover:border-primary/20 hover:shadow-sm transition-all group">
                 <div class="flex gap-3 sm:gap-4 items-start sm:items-center overflow-hidden w-full sm:w-auto">
                     <div class="w-10 h-10 rounded-xl bg-slate-50 flex items-center justify-center text-slate-400 flex-shrink-0 group-hover:bg-primary/5 group-hover:text-primary transition-colors">
                         <i data-lucide="user" class="w-5 h-5"></i>
@@ -139,12 +144,12 @@ function createBookingElement(b) {
                                 ${b.room}
                             </span>
                         </div>
-                        <span class="text-xs text-slate-400 font-medium truncate">${formatDate(b.date)} • <br/> ${formatTime(startTime)} → ${formatTime(endTime)}</span>
+                        <span class="text-xs text-slate-400 font-medium truncate">${formatDate(b.date)} • ${formatTime(startTime)} → ${formatTime(endTime)}</span>
                         ${b.note ? `<div class="text-xs text-slate-500 mt-1 flex items-start gap-1"><i data-lucide="file-text" class="w-3.5 h-3.5 mt-0.5 opacity-70 flex-shrink-0"></i><span class="flex-1 line-clamp-2" title="${b.note.replace(/\"/g, '&quot;')}">${b.note}</span></div>` : ''}
                     </div>
                 </div>
                 
-                <div class="flex items-center justify-between sm:justify-end gap-2 transition-opacity w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0">
+                <div class="flex items-center justify-between sm:justify-end gap-3 transition-opacity w-full sm:w-auto mt-2 sm:mt-0 pt-3 sm:pt-0 border-t border-slate-50 sm:border-t-0">
                     ${attendanceBtn}
                     <div class="flex items-center">
                         <div class="h-8 w-px bg-slate-100 mx-1 hidden sm:block"></div>
@@ -162,63 +167,134 @@ function createBookingElement(b) {
             `;
 }
 
+// --- Date Selection UI Logic ---
+function updateDatesUI() {
+    selectedDatesContainer.innerHTML = selectedDates.map((item, index) => `
+        <div class="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-in fade-in zoom-in duration-200 relative group/card">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2 text-slate-800 font-bold text-sm">
+                    <i data-lucide="calendar" class="w-4 h-4 text-primary"></i>
+                    <span>${formatDate(item.date)}</span>
+                </div>
+                <button type="button" onclick="removeDate(${index})" class="text-slate-400 hover:text-rose-500 transition-colors">
+                    <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">From</label>
+                    <input type="time" 
+                        value="${item.start_time || ''}" 
+                        onchange="updateBookingTime(${index}, 'start_time', this.value)"
+                        class="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none text-xs font-bold transition-all">
+                </div>
+                <div class="space-y-1">
+                    <label class="text-[10px] font-black uppercase tracking-widest text-slate-400 ml-1">To</label>
+                    <input type="time" 
+                        value="${item.end_time || ''}" 
+                        onchange="updateBookingTime(${index}, 'end_time', this.value)"
+                        class="block w-full px-3 py-2 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-primary focus:outline-none text-xs font-bold transition-all">
+                </div>
+            </div>
+        </div>
+    `).join('');
+    lucide.createIcons();
+}
+
+window.updateBookingTime = (index, field, value) => {
+    selectedDates[index][field] = value;
+};
+
+window.removeDate = (index) => {
+    selectedDates.splice(index, 1);
+    updateDatesUI();
+};
+
+addDateBtn.addEventListener('click', () => {
+    const date = dateInput.value;
+    if (!date) return;
+    if (selectedDates.some(item => item.date === date)) {
+        alert("Date already added.");
+        return;
+    }
+    // Default times: 09:00 - 10:00 or similar could be helpful, but user asked for inputs.
+    selectedDates.push({ date, start_time: '', end_time: '' });
+    selectedDates.sort((a, b) => a.date.localeCompare(b.date)); 
+    updateDatesUI();
+    dateInput.value = ''; 
+});
+
 // --- Submit Logic ---
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     warning.classList.add('hidden');
 
     const fd = new FormData(form);
-    const booking = {
-        room: fd.get('room'),
-        name: fd.get('name').trim(),
-        date: fd.get('date'),
-        start_time: fd.get('start_time'),
-        end_time: fd.get('end_time'),
-        note: fd.get('note') ? fd.get('note').trim() : null
-    };
+    const room = fd.get('room');
+    const name = fd.get('name').trim();
+    const note = fd.get('note') ? fd.get('note').trim() : null;
 
     // Basic Field Validation
-    if (!booking.room || !booking.name || !booking.date || !booking.start_time || !booking.end_time) {
-        alert("Please fill in all fields.");
+    if (!room || !name) {
+        alert("Please fill in room and name.");
         return;
     }
 
-    // Logical Time Check
-    if (booking.start_time >= booking.end_time) {
-        alert("End time must be after start time.");
+    if (selectedDates.length === 0) {
+        alert("Please select at least one date.");
         return;
+    }
+
+    // Per-date validation
+    for (const item of selectedDates) {
+        if (!item.start_time || !item.end_time) {
+            alert(`Please set a time range for ${formatDate(item.date)}.`);
+            return;
+        }
+        if (item.start_time >= item.end_time) {
+            alert(`End time must be after start time for ${formatDate(item.date)}.`);
+            return;
+        }
     }
 
     try {
         const id = fd.get('id');
         const isEdit = !!id;
 
-        // Overlap Check (Supabase)
-        // Rule: (existing_start < new_end) AND (existing_end > new_start)
-        let query = supabaseClient
-            .from('bookings')
-            .select('id')
-            .eq('room', booking.room)
-            .eq('date', booking.date)
-            .lt('start_time', booking.end_time)
-            .gt('end_time', booking.start_time);
-
-        if (isEdit) {
-            query = query.neq('id', id);
+        if (isEdit && selectedDates.length > 1) {
+            alert("Editing is only supported for a single booking. Only the first entry will be updated.");
         }
 
-        const { data: existing, error: checkError } = await query;
+        const entriesToProcess = isEdit ? [selectedDates[0]] : selectedDates;
 
-        if (checkError) throw checkError;
+        // Conflict check for each entry
+        for (const entry of entriesToProcess) {
+            let query = supabaseClient
+                .from('bookings')
+                .select('id')
+                .eq('room', room)
+                .eq('date', entry.date)
+                .lt('start_time', entry.end_time)
+                .gt('end_time', entry.start_time);
 
-        if (existing && existing.length > 0) {
-            warningMessage.innerText = "This room is already reserved for this time range.";
-            warning.classList.remove('hidden');
-            return;
+            if (isEdit) {
+                query = query.neq('id', id);
+            }
+
+            const { data: conflicts, error: checkError } = await query;
+            if (checkError) throw checkError;
+
+            if (conflicts && conflicts.length > 0) {
+                warningMessage.innerText = `Conflict detected for ${formatDate(entry.date)} at the selected time.`;
+                warning.classList.remove('hidden');
+                return;
+            }
         }
 
         if (isEdit) {
-            // Update Supabase
+            const entry = entriesToProcess[0];
+            const booking = { room, name, date: entry.date, start_time: entry.start_time, end_time: entry.end_time, note };
             const { error: updateError } = await supabaseClient
                 .from('bookings')
                 .update(booking)
@@ -226,26 +302,27 @@ form.addEventListener('submit', async (e) => {
 
             if (updateError) throw updateError;
         } else {
-            // Save to Supabase
+            const bookings = entriesToProcess.map(entry => ({
+                room, name, date: entry.date, start_time: entry.start_time, end_time: entry.end_time, note
+            }));
             const { error: insertError } = await supabaseClient
                 .from('bookings')
-                .insert([booking]);
+                .insert(bookings);
 
             if (insertError) throw insertError;
         }
 
-        // UI feedback
-        cancelEdit(); // Reset form and mode
-        render();
-
         // WhatsApp Message
-        const actionText = isEdit ? "Updated" : "Reserved";
-        const noteStr = booking.note ? `\n*Note:* ${booking.note}` : "";
-        const msg = `*Room ${actionText}*\n\n*Room:* ${booking.room}\n*Date:* ${formatDate(booking.date)}\n*Time:* ${formatTime(booking.start_time)} → ${formatTime(booking.end_time)}\n*By:* ${booking.name}${noteStr}`;
+        const bookingsListStr = entriesToProcess.map(e => `* ${formatDate(e.date)}: ${formatTime(e.start_time)} → ${formatTime(e.end_time)}`).join('\n');
+        const noteStr = note ? `\n*Note:* ${note}` : "";
+        
+        const msg = `Room Reserved\n\nRoom: ${room}\nReserved By: ${name}\n\nBookings:\n${bookingsListStr}${noteStr}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
-        // iOS compatibility fix: window.open is often blocked after async tasks.
-        // On mobile/iOS, direct location change is more reliable.
+        // Reset
+        cancelEdit();
+        render();
+
         if (/iPhone|iPad|iPod|Android/i.test(navigator.userAgent)) {
             window.location.href = whatsappUrl;
         } else {
@@ -254,7 +331,7 @@ form.addEventListener('submit', async (e) => {
 
     } catch (error) {
         console.error("Booking Error:", error.message);
-        alert("Failed to save booking. Check console for details.");
+        alert("Failed to save booking.");
     }
 });
 
@@ -460,9 +537,8 @@ window.handleEdit = (id, name, room, date, startTime, endTime, note) => {
     bookingIdInput.value = id;
     document.getElementById('user-name').value = name;
     document.getElementById('room-select').value = room;
-    document.getElementById('booking-date').value = date;
-    document.getElementById('start-time').value = startTime;
-    document.getElementById('end-time').value = endTime;
+    selectedDates = [{ date, start_time: startTime, end_time: endTime }];
+    updateDatesUI();
     document.getElementById('booking-note').value = note && note !== 'null' ? note : '';
 
     submitText.innerText = "Save Changes";
@@ -475,6 +551,8 @@ window.handleEdit = (id, name, room, date, startTime, endTime, note) => {
 function cancelEdit() {
     form.reset();
     bookingIdInput.value = '';
+    selectedDates = [];
+    updateDatesUI();
     submitText.innerText = "Send Booking";
     cancelEditBtn.classList.add('hidden');
     warning.classList.add('hidden');
