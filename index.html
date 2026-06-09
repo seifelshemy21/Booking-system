@@ -20,6 +20,9 @@
     </script>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Flatpickr for Date Selection -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
     <!-- SupaBase connection -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
 </head>
@@ -103,18 +106,21 @@
 
                     <!-- Date Selection -->
                     <div class="space-y-4">
-                        <label for="booking-date" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Select Dates & Times</label>
+                        <label for="booking-date" class="block text-sm font-bold text-slate-700 mb-1.5 ml-1">Select
+                            Dates & Times</label>
                         <div class="flex gap-2">
                             <div class="relative flex-1">
-                                <input type="date" id="booking-date" 
+                                <input type="text" id="booking-date" placeholder="Select a Date"
                                     class="block w-full px-4 py-3.5 bg-slate-50 border border-slate-200 rounded-2xl focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary sm:text-sm transition-all">
                             </div>
                             <button type="button" id="add-date-btn"
-                                class="px-5 py-3.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-2xl transition-all flex items-center justify-center group" title="Add Date">
-                                <i data-lucide="calendar-plus" class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
+                                class="px-5 py-3.5 bg-primary/10 text-primary hover:bg-primary/20 rounded-2xl transition-all flex items-center justify-center group"
+                                title="Add Date">
+                                <i data-lucide="calendar-plus"
+                                    class="w-5 h-5 group-hover:scale-110 transition-transform"></i>
                             </button>
                         </div>
-                        
+
                         <!-- Selected Dates Cards List -->
                         <div id="selected-dates-container" class="space-y-3 min-h-[1.5rem]">
                             <!-- Each date will have its own card with time inputs -->
@@ -141,6 +147,14 @@
                         role="alert">
                         <i data-lucide="alert-triangle" class="w-5 h-5 mr-3 flex-shrink-0"></i>
                         <div id="warning-message">This room is already reserved for this time range.</div>
+                    </div>
+
+                    <!-- Warning (Friday) -->
+                    <div id="friday-warning"
+                        class="hidden animate-pulse flex items-center p-3.5 text-sm text-rose-800 border-2 border-rose-100 rounded-2xl bg-rose-50"
+                        role="alert">
+                        <i data-lucide="calendar-x" class="w-5 h-5 mr-3 flex-shrink-0"></i>
+                        <div>Fridays are non-working days and cannot be booked.</div>
                     </div>
 
                     <!-- Buttons -->
@@ -391,6 +405,23 @@
 
         .btn-interact:active {
             transform: translateY(0) scale(0.96);
+        }
+
+        /* Flatpickr Mobile Responsiveness */
+        @media screen and (max-width: 480px) {
+            .flatpickr-calendar {
+                left: 50% !important;
+                right: auto !important;
+                transform: translateX(-50%) !important;
+                width: 300px !important;
+            }
+            .flatpickr-days,
+            .flatpickr-weekwrapper .flatpickr-weeks,
+            .dayContainer {
+                width: 100% !important;
+                min-width: 100% !important;
+                max-width: 100% !important;
+            }
         }
     </style>
 

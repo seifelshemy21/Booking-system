@@ -1,6 +1,7 @@
 const form = document.getElementById('booking-form');
 const list = document.getElementById('bookings-list');
 const warning = document.getElementById('duplicate-warning');
+const fridayWarning = document.getElementById('friday-warning');
 const clearBtn = document.getElementById('clear-all');
 const filterBtns = document.querySelectorAll('.filter-btn');
 const cancelEditBtn = document.getElementById('cancel-edit');
@@ -45,6 +46,20 @@ const ROOM_COLORS = {
 
 // Initialize Icons
 lucide.createIcons();
+
+// Initialize Flatpickr
+const datePicker = flatpickr("#booking-date", {
+    disableMobile: true, // Force custom UI on mobile to support disabled days
+    position: "auto center", // Center the calendar relative to input
+    disable: [
+        function(date) {
+            return date.getDay() === 5; // 5 is Friday
+        }
+    ],
+    locale: {
+        firstDayOfWeek: 1 // Start week on Monday
+    }
+});
 
 // --- Render function ---
 async function render() {
@@ -220,15 +235,16 @@ addDateBtn.addEventListener('click', () => {
     }
     // Default times: 09:00 - 10:00 or similar could be helpful, but user asked for inputs.
     selectedDates.push({ date, start_time: '', end_time: '' });
-    selectedDates.sort((a, b) => a.date.localeCompare(b.date)); 
+    selectedDates.sort((a, b) => a.date.localeCompare(b.date));
     updateDatesUI();
-    dateInput.value = ''; 
+    datePicker.clear();
 });
 
 // --- Submit Logic ---
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     warning.classList.add('hidden');
+    fridayWarning.classList.add('hidden');
 
     const fd = new FormData(form);
     const room = fd.get('room');
@@ -254,6 +270,10 @@ form.addEventListener('submit', async (e) => {
         }
         if (item.start_time >= item.end_time) {
             alert(`End time must be after start time for ${formatDate(item.date)}.`);
+            return;
+        }
+        if (!validateBookingDate(item.date)) {
+            fridayWarning.classList.remove('hidden');
             return;
         }
     }
@@ -315,7 +335,7 @@ form.addEventListener('submit', async (e) => {
         // WhatsApp Message
         const bookingsListStr = entriesToProcess.map(e => `* ${formatDate(e.date)}: ${formatTime(e.start_time)} → ${formatTime(e.end_time)}`).join('\n');
         const noteStr = note ? `\n*Note:* ${note}` : "";
-        
+
         const msg = `Room Reserved\n\nRoom: ${room}\nReserved By: ${name}\n\nBookings:\n${bookingsListStr}${noteStr}`;
         const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(msg)}`;
 
@@ -553,14 +573,29 @@ function cancelEdit() {
     bookingIdInput.value = '';
     selectedDates = [];
     updateDatesUI();
+    datePicker.clear();
     submitText.innerText = "Send Booking";
     cancelEditBtn.classList.add('hidden');
     warning.classList.add('hidden');
+    fridayWarning.classList.add('hidden');
 }
 
 cancelEditBtn.addEventListener('click', cancelEdit);
 
 // --- Helpers ---
+function isFriday(dateString) {
+    const [year, month, day] = dateString.split('-');
+    const date = new Date(year, month - 1, day);
+    return date.getDay() === 5;
+}
+
+function validateBookingDate(dateString) {
+    if (isFriday(dateString)) {
+        return false;
+    }
+    return true;
+}
+
 function formatDate(d) {
     const parts = d.split('-');
     return `${parts[2]}/${parts[1]}/${parts[0]}`;
