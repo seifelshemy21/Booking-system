@@ -98,7 +98,7 @@ async function render() {
     }
 }
 
-// --- Dynamic Realtime UI Addition ---
+// --- Dynamic Realtime UI Updates ---
 function addBookingToUI(booking) {
     if (!booking) return;
 
@@ -107,7 +107,7 @@ function addBookingToUI(booking) {
         return;
     }
 
-    // Handle potential duplicate (e.g. if render was called nearly at same time)
+    // Handle potential duplicate
     if (document.querySelector(`[data-id="${booking.id}"]`)) {
         return;
     }
@@ -125,6 +125,38 @@ function addBookingToUI(booking) {
 
     // Re-init icons only for the new element to save performance
     lucide.createIcons();
+}
+
+function updateBookingInUI(booking) {
+    if (!booking) return;
+    const existingElement = document.querySelector(`[data-id="${booking.id}"]`);
+    
+    if (existingElement) {
+        // If it no longer matches the filter, remove it
+        if (currentFilter !== 'All' && booking.room !== currentFilter) {
+            existingElement.remove();
+            if (list.children.length === 0) render();
+        } else {
+            // Replace the HTML of the existing element
+            existingElement.outerHTML = createBookingElement(booking);
+            lucide.createIcons();
+        }
+    } else {
+        // If it wasn't there but now matches the filter
+        if (currentFilter === 'All' || booking.room === currentFilter) {
+            addBookingToUI(booking);
+        }
+    }
+}
+
+function removeBookingFromUI(id) {
+    const existingElement = document.querySelector(`[data-id="${id}"]`);
+    if (existingElement) {
+        existingElement.remove();
+        if (list.children.length === 0) {
+            render();
+        }
+    }
 }
 
 // --- Helper: Generate Booking HTML ---
@@ -506,20 +538,52 @@ clearBtn.addEventListener('click', async () => {
 });
 
 // --- Realtime Subscription ---
-supabaseClient
-    .channel('public:bookings')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'bookings' }, (payload) => {
-        addBookingToUI(payload.new);
-    })
-    .subscribe();
+let publicChannel = null;
+let realtimeRetryTimeout = null;
 
-// Realtime Office Requests
-supabaseClient
-    .channel('public:office_requests')
-    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'office_requests' }, (payload) => {
-        renderOfficeRequests();
-    })
-    .subscribe();
+function setupRealtime() {
+    // If a channel already exists, remove it before recreating
+    if (publicChannel) {
+        supabaseClient.removeChannel(publicChannel);
+    }
+    
+    publicChannel = supabaseClient
+        .channel('public-events')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
+            console.log('Bookings Realtime:', payload.eventType, payload);
+            if (payload.eventType === 'INSERT') {
+                addBookingToUI(payload.new);
+            } else if (payload.eventType === 'UPDATE') {
+                updateBookingInUI(payload.new);
+            } else if (payload.eventType === 'DELETE') {
+                removeBookingFromUI(payload.old.id);
+            }
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'office_requests' }, (payload) => {
+            console.log('Office Requests Realtime:', payload.eventType, payload);
+            renderOfficeRequests(); // Using full render for simplicity
+        })
+        .subscribe((status, err) => {
+            console.log('Realtime status:', status);
+            if (status === 'SUBSCRIBED') {
+                console.log('Successfully connected to realtime channel.');
+                if (realtimeRetryTimeout) clearTimeout(realtimeRetryTimeout);
+                realtimeRetryTimeout = null;
+            } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
+                console.error('Realtime disconnected or errored. Status:', status);
+                // Attempt to reconnect after 5 seconds
+                if (!realtimeRetryTimeout) {
+                    console.log('Attempting to reconnect in 5 seconds...');
+                    realtimeRetryTimeout = setTimeout(() => {
+                        realtimeRetryTimeout = null;
+                        setupRealtime();
+                    }, 5000);
+                }
+            }
+        });
+}
+
+setupRealtime();
 
 // --- Action Handlers (Global for onclick) ---
 window.handleDelete = async (id) => {
