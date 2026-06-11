@@ -52,7 +52,7 @@ const datePicker = flatpickr("#booking-date", {
     disableMobile: true, // Force custom UI on mobile to support disabled days
     position: "auto center", // Center the calendar relative to input
     disable: [
-        function(date) {
+        function (date) {
             return date.getDay() === 5; // 5 is Friday
         }
     ],
@@ -130,7 +130,7 @@ function addBookingToUI(booking) {
 function updateBookingInUI(booking) {
     if (!booking) return;
     const existingElement = document.querySelector(`[data-id="${booking.id}"]`);
-    
+
     if (existingElement) {
         // If it no longer matches the filter, remove it
         if (currentFilter !== 'All' && booking.room !== currentFilter) {
@@ -537,52 +537,95 @@ clearBtn.addEventListener('click', async () => {
     }
 });
 
-// --- Realtime Subscription ---
+// ================== REALTIME ==================
 let publicChannel = null;
 let realtimeRetryTimeout = null;
 
 function setupRealtime() {
-    // If a channel already exists, remove it before recreating
+
+    // Remove old channel if exists
     if (publicChannel) {
         supabaseClient.removeChannel(publicChannel);
     }
-    
+
     publicChannel = supabaseClient
         .channel('public-events')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'bookings' }, (payload) => {
-            console.log('Bookings Realtime:', payload.eventType, payload);
-            if (payload.eventType === 'INSERT') {
-                addBookingToUI(payload.new);
-            } else if (payload.eventType === 'UPDATE') {
-                updateBookingInUI(payload.new);
-            } else if (payload.eventType === 'DELETE') {
-                removeBookingFromUI(payload.old.id);
+
+        // BOOKINGS
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'bookings'
+            },
+            async (payload) => {
+
+                console.log('🔥 BOOKINGS EVENT:', payload.eventType);
+                console.log(payload);
+
+                // Reload all bookings from database
+                await render();
             }
-        })
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'office_requests' }, (payload) => {
-            console.log('Office Requests Realtime:', payload.eventType, payload);
-            renderOfficeRequests(); // Using full render for simplicity
-        })
-        .subscribe((status, err) => {
+        )
+
+        // OFFICE REQUESTS
+        .on(
+            'postgres_changes',
+            {
+                event: '*',
+                schema: 'public',
+                table: 'office_requests'
+            },
+            async (payload) => {
+
+                console.log('🔥 OFFICE REQUEST EVENT:', payload.eventType);
+                console.log(payload);
+
+                await renderOfficeRequests();
+            }
+        )
+
+        .subscribe((status) => {
+
             console.log('Realtime status:', status);
+
             if (status === 'SUBSCRIBED') {
-                console.log('Successfully connected to realtime channel.');
-                if (realtimeRetryTimeout) clearTimeout(realtimeRetryTimeout);
-                realtimeRetryTimeout = null;
-            } else if (status === 'CHANNEL_ERROR' || status === 'CLOSED') {
-                console.error('Realtime disconnected or errored. Status:', status);
-                // Attempt to reconnect after 5 seconds
+
+                console.log('✅ Successfully connected to Realtime');
+
+                if (realtimeRetryTimeout) {
+                    clearTimeout(realtimeRetryTimeout);
+                    realtimeRetryTimeout = null;
+                }
+
+            } else if (
+                status === 'CHANNEL_ERROR' ||
+                status === 'TIMED_OUT' ||
+                status === 'CLOSED'
+            ) {
+
+                console.error('❌ Realtime disconnected:', status);
+
                 if (!realtimeRetryTimeout) {
-                    console.log('Attempting to reconnect in 5 seconds...');
+
                     realtimeRetryTimeout = setTimeout(() => {
+
+                        console.log('🔄 Reconnecting...');
+
                         realtimeRetryTimeout = null;
                         setupRealtime();
+
                     }, 5000);
+
                 }
             }
         });
+
+    console.log('Realtime Channel:', publicChannel);
 }
 
+// Start realtime
 setupRealtime();
 
 // --- Action Handlers (Global for onclick) ---
