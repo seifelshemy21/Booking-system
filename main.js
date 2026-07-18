@@ -67,7 +67,8 @@ async function render() {
         const { data: bookings, error } = await supabaseClient
             .from('bookings')
             .select('*')
-            .order('created_at', { ascending: false });
+            .order('date', { ascending: true })
+            .order('start_time', { ascending: true });
 
         if (error) throw error;
 
@@ -120,8 +121,8 @@ function addBookingToUI(booking) {
         list.innerHTML = '';
     }
 
-    // Prepend to top
-    list.insertAdjacentHTML('afterbegin', bookingHtml);
+    // Append to bottom
+    list.insertAdjacentHTML('beforeend', bookingHtml);
 
     // Re-init icons only for the new element to save performance
     lucide.createIcons();
