@@ -262,11 +262,6 @@ window.removeDate = (index) => {
 addDateBtn.addEventListener('click', () => {
     const date = dateInput.value;
     if (!date) return;
-    if (selectedDates.some(item => item.date === date)) {
-        alert("Date already added.");
-        return;
-    }
-    // Default times: 09:00 - 10:00 or similar could be helpful, but user asked for inputs.
     selectedDates.push({ date, start_time: '', end_time: '' });
     selectedDates.sort((a, b) => a.date.localeCompare(b.date));
     updateDatesUI();
@@ -321,7 +316,20 @@ form.addEventListener('submit', async (e) => {
 
         const entriesToProcess = isEdit ? [selectedDates[0]] : selectedDates;
 
-        // Conflict check for each entry
+        // Conflict check between selected time slots within the form submission itself
+        for (let i = 0; i < entriesToProcess.length; i++) {
+            for (let j = i + 1; j < entriesToProcess.length; j++) {
+                const a = entriesToProcess[i];
+                const b = entriesToProcess[j];
+                if (a.date === b.date && a.start_time < b.end_time && a.end_time > b.start_time) {
+                    warningMessage.innerText = `Conflict detected between selected time slots for ${formatDate(a.date)}.`;
+                    warning.classList.remove('hidden');
+                    return;
+                }
+            }
+        }
+
+        // Database conflict check for each entry
         for (const entry of entriesToProcess) {
             let query = supabaseClient
                 .from('bookings')
@@ -339,7 +347,7 @@ form.addEventListener('submit', async (e) => {
             if (checkError) throw checkError;
 
             if (conflicts && conflicts.length > 0) {
-                warningMessage.innerText = `Conflict detected for ${formatDate(entry.date)} at the selected time.`;
+                warningMessage.innerText = `Conflict detected for ${formatDate(entry.date)} at the selected time (${formatTime(entry.start_time)} - ${formatTime(entry.end_time)}).`;
                 warning.classList.remove('hidden');
                 return;
             }
